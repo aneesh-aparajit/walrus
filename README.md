@@ -28,4 +28,12 @@ It's essential to understand that WALs are written much more often than read fro
 
 When reading, the WAL processes entries sequentially, starting from the beginning of the file and moving towards the end. An integral part of this process is verifying the checksums for each entry to ensure data integrity. If a checksum verification fails, the WAL halts the reading process and returns an error. This indicates that the WAL requires repair before it can be successfully read again. In cases where a single WAL entry is found to be corrupted, all subsequent entries must be discarded. This is because, beyond the point of corruption, there's no longer a reliable guarantee of data integrity, and continuing to process potentially compromised entries could lead to further inconsistencies or data loss.
 
-## Implementation Details
+
+## Functional Requirements
+- write entries to a log
+- read all entries from a given log segment
+- read all entries from the last log segment
+- read all entries from a given timestamp
+- auto remove old log segments on reaching segment limit
+- sync entries to disk at regular entries
+- CRC32 checksum for data integrity
