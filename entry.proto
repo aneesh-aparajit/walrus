@@ -1,0 +1,10 @@
+syntax = 'proto3';
+
+option go_package = '../walrus';
+
+message WalEntry {
+    uint64 logSequenceNo = 1;
+    bytes data = 2;
+    uint32 crc = 3;
+    optional bool isCkpt = 4;
+}
