@@ -47,7 +47,6 @@ func readProtobufFromFile(filename string) {
 			}
 			panic(err)
 		}
-		fmt.Println("size:", size)
 
 		data := make([]byte, size)
 		if _, err := io.ReadFull(file, data); err != nil {
@@ -57,7 +56,6 @@ func readProtobufFromFile(filename string) {
 		if err := proto.Unmarshal(data, e); err != nil {
 			panic(err)
 		}
-		fmt.Println(e.LogSequenceNo, e.Crc, e.Data, e.IsCkpt)
 	}
 
 }
