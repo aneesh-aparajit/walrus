@@ -133,3 +133,8 @@ func (wal *WAL) Sync() error {
 
 	return nil
 }
+
+// Replay all logs from the beginning.
+func (wal *WAL) Replay() ([]*WalEntry, error) {
+	return wal.readAllLogs()
+}

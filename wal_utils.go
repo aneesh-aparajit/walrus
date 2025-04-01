@@ -181,3 +181,53 @@ func (wal *WAL) repairLog() error {
 		}
 	}
 }
+
+func (wal *WAL) readAllLogs() ([]*WalEntry, error) {
+	entries := make([]*WalEntry, 0)
+	files, err := filepath.Glob(filepath.Join(segmentPrefix + "*"))
+	if err != nil {
+		return nil, err
+	}
+
+	// assuming all the files in sorted order
+	for _, file := range files {
+		f, err := os.OpenFile(file, os.O_RDONLY, 0644)
+		if err != nil {
+			return nil, err
+		}
+
+		wals, err := wal.readAllLogsFromFile(f)
+		if err != nil {
+			return nil, err
+		}
+
+		entries = append(entries, wals...)
+	}
+
+	return entries, nil
+}
+
+func (wal *WAL) readAllLogsFromFile(file *os.File) ([]*WalEntry, error) {
+	entries := make([]*WalEntry, 0)
+	for {
+		var size int32
+		if err := binary.Read(file, binary.LittleEndian, &size); err != nil {
+			return nil, err
+		}
+
+		data := make([]byte, size)
+		if _, err := io.ReadFull(file, data); err != nil {
+			if err == io.EOF {
+				return entries, nil
+			}
+			return nil, err
+		}
+
+		log := &WalEntry{}
+		if err := proto.Unmarshal(data, log); err != nil {
+			return nil, err
+		}
+
+		entries = append(entries, log)
+	}
+}
