@@ -1,6 +1,7 @@
 package walrus
 
 import (
+	"bufio"
 	"encoding/binary"
 	"fmt"
 	"hash/crc32"
@@ -125,5 +126,58 @@ func (wal *WAL) rotateLogs() error {
 		return err
 	}
 
+	if err := wal.repairLog(); err != nil {
+		return err
+	}
+
+	// now create a new file
+	fileName := filepath.Join(wal.directory, segmentPrefix+fmt.Sprint(wal.lastSegmentId))
+	file, err := os.OpenFile(fileName, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+
+	wal.currSegment = file
+	// now that we have created a new file, we need to flush the old buffer
+	if err := wal.Sync(); err != nil {
+		return err
+	}
+	wal.buffer = bufio.NewWriter(wal.currSegment)
+
 	return nil
+}
+
+// we will repair log right before we create a new segment.
+func (wal *WAL) repairLog() error {
+	// let's say there is an issue with the log file
+	// in that case, we simply truncate the entire file.
+	// we do this just for the latest file.
+	filePath := filepath.Join(wal.directory, segmentPrefix+fmt.Sprint(wal.lastSegmentId))
+	file, err := os.OpenFile(filePath, os.O_RDONLY, 0644)
+	if err != nil {
+		return err
+	}
+
+	for {
+		var size uint32
+		if err := binary.Read(file, binary.LittleEndian, &size); err != nil {
+			return err
+		}
+
+		data := make([]byte, size)
+		currentOffset, err := file.Seek(0, io.SeekCurrent)
+		if err != nil {
+			return err
+		}
+
+		if _, err := io.ReadFull(file, data); err != nil {
+			if err == io.EOF {
+				return nil
+			}
+			// in case there is some error, then we will simply truncate the remaining file.
+			if err := file.Truncate(currentOffset); err != nil {
+				return err
+			}
+		}
+	}
 }

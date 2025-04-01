@@ -10,7 +10,7 @@ import (
 
 func findLastSegmentId(directory string, maxFileSize int64) (int, error) {
 	var lastSegmentId int
-	files, err := filepath.Glob(filepath.Join(directory, fmt.Sprintf("%s*"), segmentPrefix))
+	files, err := filepath.Glob(filepath.Join(directory, fmt.Sprintf("%s*", segmentPrefix)))
 	if err != nil {
 		return 0, err
 	}
